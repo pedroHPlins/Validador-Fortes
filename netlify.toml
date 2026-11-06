@@ -1,0 +1,4 @@
+# Site estático: a página já vem montada em dist/ (python tools/build.py).
+[build]
+  publish = "dist"
+  command = ""

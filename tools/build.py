@@ -40,6 +40,14 @@ def main():
         f.write(html)
     print(f"{saida} ({os.path.getsize(saida) / 1024:.0f} KB)")
 
+    # publicação na web (Netlify / Cloudflare Pages): index.html leva à versão atual
+    nome = os.path.basename(saida)
+    with open(os.path.join(RAIZ, "dist", "index.html"), "w", encoding="utf-8") as f:
+        f.write(f'<!doctype html><meta charset="utf-8"><title>Validador Fortes Fiscal</title>'
+                f'<meta http-equiv="refresh" content="0; url={nome}"><a href="{nome}">Abrir o validador</a>\n')
+    with open(os.path.join(RAIZ, "dist", "_headers"), "w", encoding="utf-8") as f:
+        f.write(ler("src", "_headers"))
+
 
 if __name__ == "__main__":
     main()

@@ -18,6 +18,19 @@ Abra `dist/validador-fortes-204.html` no navegador (Chrome/Edge) e arraste o arq
 - Aba **Leiaute e regras**: todos os registros/campos do leiaute e, para cada observação do PDF,
   se ela é validada automaticamente, depende de parâmetros, é só descritiva ou ainda não foi automatizada.
 
+### Publicar na web
+
+A pasta `dist/` é o site completo: `index.html` abre a versão atual, e `_headers` define uma política de
+segurança (CSP com `connect-src 'none'`) que faz o navegador bloquear qualquer envio de dados. Nenhum build
+é necessário no servidor; depois de `python tools/build.py`, basta fazer commit e push.
+
+- **Netlify**: em *Add new site → Import an existing project*, escolha GitHub e o repositório `Validador-Fortes`.
+  O `netlify.toml` já informa a pasta `dist` e que não há comando de build. Clique em *Deploy*.
+- **Cloudflare Pages**: em *Workers & Pages → Create → Pages → Connect to Git*, escolha o repositório.
+  Em *Framework preset* use *None*, deixe *Build command* vazio e, em *Build output directory*, use `dist`.
+
+Os dois serviços dão acesso só aos repositórios que você autorizar e republicam o site a cada push na `main`.
+
 ### O que é verificado
 
 | Verificação | Exemplo |
