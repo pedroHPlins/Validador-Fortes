@@ -1,0 +1,5 @@
+testes/privados/
+__pycache__/
+*.pyc
+.claude/
+spec/.cache_pdf.json

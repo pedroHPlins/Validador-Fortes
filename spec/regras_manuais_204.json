@@ -1,0 +1,79 @@
+{
+  "_descricao": "Regras escritas à mão para observações do leiaute que o gerador não converte sozinho. Somadas às regras automáticas por tools/gerar_regras.py. Chave: REGISTRO.campo.",
+  "campos": {
+    "NFM.9": [
+      {
+        "tipo": "tamanho",
+        "exato": 9,
+        "nivel": "aviso",
+        "quando": {
+          "campo": 4,
+          "op": "in",
+          "valores": [
+            "NFE",
+            "NFA"
+          ]
+        },
+        "texto": "Quando se tratar de Nota Fiscal Eletrônica ou Nota Fiscal Avulsa informar o número com 9 dígitos, senão informar com 7 dígitos."
+      },
+      {
+        "tipo": "tamanho",
+        "exato": 7,
+        "nivel": "aviso",
+        "quando": {
+          "campo": 4,
+          "op": "notin",
+          "valores": [
+            "NFE",
+            "NFA"
+          ]
+        },
+        "texto": "Quando se tratar de Nota Fiscal Eletrônica ou Nota Fiscal Avulsa informar o número com 9 dígitos, senão informar com 7 dígitos."
+      }
+    ],
+    "CTC.8": [
+      {
+        "tipo": "tamanho",
+        "max": 6,
+        "quando": {
+          "campo": 4,
+          "op": "notin",
+          "valores": [
+            "CTE"
+          ]
+        },
+        "texto": "Somente deverá ser informado com tamanho 9 para as Notas de Conhecimento de Transporte Eletrônico, para as demais espécies, o tamanho máximo deverá ser 6."
+      }
+    ],
+    "NVC.6": [
+      {
+        "tipo": "tamanho",
+        "max": 6,
+        "quando": {
+          "campo": 29,
+          "op": "notin",
+          "valores": [
+            "NFCE"
+          ]
+        },
+        "texto": "Somente deverá ser informado com tamanho 6 para a espécie NFVC, para a espécie NFCE, o tamanho máximo deverá ser 9."
+      }
+    ],
+    "NFM.89": [
+      {
+        "tipo": "vazio",
+        "quando": {
+          "nao": {
+            "campo": 13,
+            "op": "in",
+            "valores": [
+              "2",
+              "3"
+            ]
+          }
+        },
+        "texto": "Preencher somente quando for documento Normal Extemporâneo / Documento cancelado extemporâneo"
+      }
+    ]
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "_descricao": "Correções manuais para lacunas/erros do PDF do leiaute 204. Aplicadas por tools/gerar_regras.py sobre o JSON extraído. 'origem' explica de onde veio o valor.",
+  "campos": [
+    {
+      "registro": "PNM",
+      "n": 1,
+      "tipo": "C",
+      "origem": "PDF não informa o tipo; Tipo de Registro é sempre C"
+    },
+    {
+      "registro": "SSP",
+      "n": 2,
+      "tipo": "C",
+      "tam": "",
+      "origem": "PDF não informa tamanho nem tipo; assumido C sem limite de tamanho"
+    },
+    {
+      "registro": "PCF",
+      "n": 6,
+      "tipo": "N",
+      "origem": "PDF traz '1' na coluna Tipo; Tabela 16 tem códigos numéricos"
+    },
+    {
+      "registro": "PCE",
+      "n": 8,
+      "tam": "15",
+      "tipo": "V",
+      "origem": "PDF não informa; igual aos demais valores do registro"
+    },
+    {
+      "registro": "CUI",
+      "n": 18,
+      "tam": "15",
+      "tipo": "V",
+      "origem": "PDF não informa; igual ao campo 17 (Valor do PIS)"
+    },
+    {
+      "registro": "REX",
+      "n": 4,
+      "tam": "8",
+      "tipo": "D",
+      "origem": "PDF não informa; campo de data"
+    },
+    {
+      "registro": "CEC",
+      "n": 4,
+      "tam": "6",
+      "tipo": "C",
+      "origem": "PDF não informa; unidade de medida tem 6 posições nos demais registros"
+    },
+    {
+      "registro": "SNT",
+      "n": 14,
+      "tam": "2",
+      "tipo": "C",
+      "origem": "PDF não informa; UF tem 2 posições"
+    },
+    {
+      "registro": "NFG",
+      "n": 13,
+      "tam": "1",
+      "tipo": "N",
+      "origem": "PDF não informa; valores permitidos 1, 2 e 3"
+    },
+    {
+      "registro": "MDC",
+      "n": 5,
+      "tipo": "V",
+      "origem": "PDF indica tipo N para um campo de valor monetário; arquivos reais trazem casas decimais"
+    },
+    {
+      "registro": "ODS",
+      "n": 18,
+      "tipo": "V",
+      "origem": "PDF indica tipo N para um campo de valor monetário; arquivos reais trazem casas decimais"
+    },
+    {
+      "registro": "IPE",
+      "n": 6,
+      "tipo": "V",
+      "origem": "PDF indica tipo N para um campo de valor monetário; arquivos reais trazem casas decimais"
+    },
+    {
+      "registro": "IPE",
+      "n": 7,
+      "tipo": "V",
+      "origem": "PDF indica tipo N para um campo de valor monetário; arquivos reais trazem casas decimais"
+    },
+    {
+      "registro": "IPE",
+      "n": 8,
+      "tipo": "V",
+      "origem": "PDF indica tipo N para um campo de valor monetário; arquivos reais trazem casas decimais"
+    },
+    {
+      "registro": "NVC",
+      "n": 6,
+      "tam": "9",
+      "origem": "PDF informa tamanho 6, mas a descrição admite 9 posições para NFC-e (o limite de 6 para NFVC fica em regras_manuais_204.json)"
+    }
+  ],
+  "camposInseridos": [
+    {
+      "registro": "CIV",
+      "depoisDe": 12,
+      "campo": {
+        "n": 13,
+        "nome": "Código da Situação Tributária do CSOSN",
+        "tam": "1",
+        "tipo": "N",
+        "descricao": [
+          "Código da Situação da Operação referente ao Simples Nacional – Conforme Tabela 19."
+        ]
+      },
+      "origem": "Campo 13 ausente no PDF (salta de 12 para 14); inferido do registro IIV, que tem a mesma estrutura"
+    }
+  ],
+  "tabelasIgnoradas": {
+    "09": "Tabela organizada por município (códigos repetidos por município); não usada para conferir domínio",
+    "32": "Tabela de tamanhos por espécie, não é lista de códigos"
+  }
+}

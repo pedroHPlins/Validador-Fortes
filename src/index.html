@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validador Fortes Fiscal</title>
+<style>/*CSS*/</style>
+</head>
+<body>
+<header class="topo">
+  <div class="marca">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+    <div>
+      <h1>Validador de arquivos .fs</h1>
+      <p class="sub">Leiaute de Importação Fortes Fiscal — versão <span id="versaoLeiaute"></span></p>
+    </div>
+  </div>
+  <nav class="abas" role="tablist">
+    <button role="tab" class="aba ativa" data-aba="validar" aria-selected="true">Validar arquivo</button>
+    <button role="tab" class="aba" data-aba="leiaute" aria-selected="false">Leiaute e regras</button>
+  </nav>
+</header>
+
+<main>
+  <!-- =============================== VALIDAR -->
+  <section id="aba-validar" class="painel-aba">
+    <div class="entrada">
+      <label id="zona" class="zona" for="arquivo">
+        <input type="file" id="arquivo" accept=".fs,.txt" hidden>
+        <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path fill="currentColor" d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <strong>Arraste o arquivo .fs aqui</strong>
+        <span>ou clique para escolher. O arquivo é lido apenas neste computador.</span>
+      </label>
+
+      <details class="contexto" id="contexto">
+        <summary>Parâmetros da empresa <span class="dica">(opcional — habilita regras que dependem de UF, regime etc.)</span></summary>
+        <div class="campos-contexto" id="camposContexto"></div>
+      </details>
+    </div>
+
+    <div id="processando" class="processando" hidden><span class="spinner"></span> Validando…</div>
+
+    <div id="resultado" hidden>
+      <div class="arquivo-info" id="arquivoInfo"></div>
+      <div class="cartoes">
+        <button class="cartao erro" data-nivel="erro"><span class="num" id="qErros">0</span><span>erros</span></button>
+        <button class="cartao aviso" data-nivel="aviso"><span class="num" id="qAvisos">0</span><span>avisos</span></button>
+        <button class="cartao info" data-nivel="info"><span class="num" id="qInfos">0</span><span>informações</span></button>
+        <div class="cartao neutro"><span class="num" id="qLinhas">0</span><span>linhas</span></div>
+      </div>
+
+      <div class="filtros">
+        <div class="seg" role="group" aria-label="Visualização">
+          <button class="seg-b ativo" data-visao="grupos">Agrupado</button>
+          <button class="seg-b" data-visao="lista">Por linha</button>
+        </div>
+        <select id="fNivel" aria-label="Nível">
+          <option value="">Todos os níveis</option>
+          <option value="erro">Erros</option>
+          <option value="aviso">Avisos</option>
+          <option value="info">Informações</option>
+        </select>
+        <select id="fRegistro" aria-label="Registro"><option value="">Todos os registros</option></select>
+        <input id="fBusca" type="search" placeholder="Buscar (mensagem, campo, valor, linha)…" aria-label="Buscar">
+        <button id="exportar" class="botao">Exportar CSV</button>
+      </div>
+
+      <div id="lista" class="lista"></div>
+      <div id="paginacao" class="paginacao"></div>
+    </div>
+  </section>
+
+  <!-- =============================== LEIAUTE -->
+  <section id="aba-leiaute" class="painel-aba" hidden>
+    <div class="cobertura" id="cobertura"></div>
+    <div class="leiaute">
+      <aside class="indice">
+        <input id="buscaReg" type="search" placeholder="Filtrar registros…" aria-label="Filtrar registros">
+        <ul id="listaRegistros"></ul>
+      </aside>
+      <article id="detalheRegistro" class="detalhe-registro">
+        <p class="vazio">Escolha um registro à esquerda para ver os campos, as observações do leiaute e como cada uma é validada.</p>
+      </article>
+    </div>
+  </section>
+</main>
+
+<!-- detalhe da linha -->
+<dialog id="dlgLinha">
+  <form method="dialog" class="dlg-topo">
+    <h2 id="dlgTitulo"></h2>
+    <button class="fechar" aria-label="Fechar">×</button>
+  </form>
+  <div id="dlgCorpo" class="dlg-corpo"></div>
+</dialog>
+
+<footer class="rodape">
+  Regras extraídas automaticamente do PDF oficial do leiaute. Observações que dependem de configurações do Fortes
+  (histórico da empresa, regime, UF) só são conferidas quando os parâmetros são informados.
+</footer>
+
+<script>/*SPEC*/</script>
+<script>/*VALIDADOR*/</script>
+<script>/*APP*/</script>
+</body>
+</html>
