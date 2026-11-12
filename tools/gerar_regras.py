@@ -84,6 +84,19 @@ class Gerador:
 
     # ---------------------------------------------------------- correções
     def aplica_correcoes(self):
+        # CAB.2 é sempre a versão do leiaute (o PDF da 197 traz "196" por engano)
+        cab = self.regs.get("CAB")
+        v = self.raw["versao"]
+        if cab and len(cab["campos"]) > 1:
+            c2 = cab["campos"][1]
+            novo = [re.sub(r'(Texto Fixo Contendo\s*["“])(\d+)(["”])', lambda m: m.group(1) + v + m.group(3), d)
+                    for d in c2.get("descricao", [])]
+            if novo != c2.get("descricao", []):
+                c2["descricao"] = novo
+                c2["correcao"] = f"PDF indica outra versão no texto fixo; ajustado para {v}"
+        for c in self.cor.get("registros", []):  # registro fora da hierarquia do PDF
+            if c["registro"] in self.regs and "pai" in c:
+                self.regs[c["registro"]]["pai"] = c["pai"]
         for c in self.cor.get("campos", []):
             reg = self.regs[c["registro"]]
             campo = next(x for x in reg["campos"] if x["n"] == c["n"])
@@ -1231,6 +1244,7 @@ class Gerador:
 
         return {
             "versao": self.raw["versao"],
+            **({"origem": self.raw["ocr"]["nota"]} if self.raw.get("ocr") else {}),
             "geradoEm": date.today().isoformat(),
             "contexto": {k: v for k, v in self.sem.get("contexto", {}).items() if not k.startswith("_")},
             "registros": saida,

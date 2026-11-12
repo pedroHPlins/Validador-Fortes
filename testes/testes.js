@@ -264,6 +264,49 @@ teste("parâmetro da empresa novo: regime do PIS/COFINS (NFM.69)", () => {
   assert.ok(tem(valida(arq, { pisCofins: "C" }), f));
 });
 
+// ---------------------------------------------------------------- versões anteriores do leiaute
+const pastaSpec = path.join(__dirname, "../spec");
+const versoes = fs.readdirSync(pastaSpec).map((f) => (/^leiaute_(\d+)\.json$/.exec(f) || [])[1]).filter(Boolean);
+const specDe = (v) => JSON.parse(fs.readFileSync(path.join(pastaSpec, `leiaute_${v}.json`), "utf8"));
+
+teste("todas as versões do leiaute estão disponíveis", () => {
+  for (const v of ["175", "183", "190", "195", "197", "204"]) assert.ok(versoes.includes(v), `falta leiaute_${v}.json`);
+});
+
+teste("cada versão: CAB/TRA definidos, campos numerados em sequência, tipos válidos, CAB.2 fixo na versão", () => {
+  for (const v of versoes) {
+    const s = specDe(v);
+    assert.strictEqual(s.versao, v);
+    assert.ok(s.registros.CAB && s.registros.TRA, `${v}: CAB/TRA`);
+    for (const [cod, r] of Object.entries(s.registros)) {
+      r.campos.forEach((c, i) => {
+        assert.strictEqual(c.n, i + 1, `${v} ${cod}: campo ${c.n} na posição ${i + 1}`);
+        assert.ok("NCDLVTS".includes(c.tipo) && c.tipo, `${v} ${cod}.${c.n}: tipo "${c.tipo}"`);
+      });
+    }
+    const cab2 = s.registros.CAB.campos[1];
+    assert.ok(cab2.obs.some((o) => o.texto.includes(`"${v}"`)), `${v}: CAB.2 deveria conter "${v}"`);
+  }
+});
+
+teste("leiaute 195 (lido por OCR) tem a estrutura dos arquivos reais gerados na 195", () => {
+  // quantidade de campos observada em arquivos .fs reais no leiaute 195
+  const s = specDe("195");
+  const esperado = { NFM: 106, PNM: 155, NVC: 59, PNC: 55, PRO: 56, IVC: 21, INM: 34 };
+  for (const [cod, n] of Object.entries(esperado)) assert.strictEqual(s.registros[cod].campos.length, n, cod);
+});
+
+teste("arquivo na versão do leiaute validado pela própria versão não acusa versão nem quantidade de campos", () => {
+  for (const v of versoes) {
+    const s = specDe(v);
+    const lin = (cod, vals) => { const c = new Array(s.registros[cod].campos.length).fill(""); c[0] = cod; for (const [k, x] of Object.entries(vals)) c[k - 1] = x; return c.join("|"); };
+    const txt = [lin("CAB", { 2: v, 3: "T", 4: "20200101", 5: "1", 6: "20200101", 7: "20200131", 8: "T", 9: "N" }), "TRA|2"].join("\r\n");
+    const r = V.validar(new TextEncoder().encode(txt), s, {});
+    const ruins = r.ocorrencias.filter((o) => /VERSAO|CAMPOS_/.test(o.codigo));
+    assert.deepStrictEqual(ruins.map((o) => o.mensagem), [], v);
+  }
+});
+
 // ---------------------------------------------------------------- execução
 let falhas = 0;
 for (const t of testes) {

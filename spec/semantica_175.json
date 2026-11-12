@@ -1,0 +1,274 @@
+{
+  "_descricao": "Mapeia, para cada documento (registro raiz), quais campos representam os conceitos usados nas observações do leiaute: documento cancelado, operação de entrada/saída, espécie, documento próprio e data do documento. Usado por tools/gerar_regras.py para converter frases como 'Campo não deve ser preenchido quando documento for cancelado' em regras. 'fixo' indica que o conceito é constante para o registro.",
+  "documentos": {
+    "ESI": {
+      "operacao": {
+        "fixo": "E"
+      },
+      "especie": 6,
+      "data": 4
+    },
+    "DSS": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 8,
+        "valores": [
+          "S"
+        ]
+      },
+      "especie": 4,
+      "data": 3
+    },
+    "NFM": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "cancelado": {
+        "campo": 13,
+        "valores": [
+          "1",
+          "3"
+        ]
+      },
+      "especie": 4,
+      "proprio": 5,
+      "data": 12
+    },
+    "NVC": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 11,
+        "valores": [
+          "1",
+          "3"
+        ]
+      },
+      "especie": 29,
+      "data": 10
+    },
+    "MRE": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 9,
+        "valores": [
+          "S"
+        ]
+      },
+      "data": 8
+    },
+    "CFC": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "data": 3
+    },
+    "CPE": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 7,
+        "valores": [
+          "2"
+        ]
+      },
+      "data": 3
+    },
+    "RMD": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 9,
+        "valores": [
+          "S"
+        ]
+      },
+      "data": 8
+    },
+    "CTC": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "cancelado": {
+        "campo": 11,
+        "valores": [
+          "1",
+          "3"
+        ]
+      },
+      "especie": 4,
+      "proprio": 118,
+      "data": 10
+    },
+    "BPS": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "especie": 3,
+      "data": 12
+    },
+    "BPE": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "cancelado": {
+        "campo": 7,
+        "valores": [
+          "1",
+          "3"
+        ]
+      },
+      "especie": 38,
+      "data": 6
+    },
+    "NTC": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "especie": 49,
+      "data": 9,
+      "cancelado": {
+        "campo": 10,
+        "valores": [
+          "1",
+          "3"
+        ]
+      }
+    },
+    "NSC": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "cancelado": {
+        "campo": 10,
+        "valores": [
+          "S"
+        ]
+      },
+      "data": 9
+    },
+    "NST": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "cancelado": {
+        "campo": 10,
+        "valores": [
+          "S"
+        ]
+      },
+      "data": 9
+    },
+    "CEE": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "cancelado": {
+        "campo": 10,
+        "valores": [
+          "1",
+          "3"
+        ]
+      },
+      "especie": 54,
+      "data": 9
+    },
+    "CGC": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "especie": 30,
+      "data": 7
+    },
+    "CFA": {
+      "operacao": {
+        "campo": 3,
+        "entrada": "E",
+        "saida": "S"
+      },
+      "especie": 30,
+      "data": 7
+    },
+    "RDD": {
+      "operacao": {
+        "fixo": "S"
+      },
+      "data": 3
+    }
+  },
+  "contexto": {
+    "_descricao": "Parâmetros da empresa/estabelecimento que o arquivo não contém. Informados opcionalmente na página; sem eles, as regras que dependem deles não são avaliadas.",
+    "uf": {
+      "rotulo": "UF do estabelecimento",
+      "tipo": "uf"
+    },
+    "regime": {
+      "rotulo": "Regime de tributação",
+      "tipo": "lista",
+      "valores": {
+        "LR": "Lucro Real",
+        "LP": "Lucro Presumido",
+        "SN": "Simples Nacional",
+        "OU": "Outros / Imune / Isento"
+      }
+    },
+    "contribuinteIPI": {
+      "rotulo": "Contribuinte do IPI",
+      "tipo": "SN"
+    },
+    "informaContabil": {
+      "rotulo": "Informa códigos contábeis",
+      "tipo": "SN"
+    },
+    "pisCofins": {
+      "rotulo": "Regime do PIS/COFINS",
+      "tipo": "lista",
+      "valores": {
+        "C": "Cumulativo",
+        "N": "Não cumulativo",
+        "CN": "Cumulativo e não cumulativo"
+      }
+    },
+    "apuraRetencoes": {
+      "rotulo": "Apura retenções de PIS/COFINS cumulativos e não cumulativos",
+      "tipo": "SN"
+    },
+    "cprb": {
+      "rotulo": "Calcula Contribuição Previdenciária (CPRB)",
+      "tipo": "SN"
+    },
+    "informaItens": {
+      "rotulo": "Informa itens dos documentos fiscais",
+      "tipo": "SN"
+    },
+    "contaNaBaixa": {
+      "rotulo": "Contabiliza com \"Conta Informada na Baixa\"",
+      "tipo": "SN"
+    },
+    "icmsRMD": {
+      "rotulo": "Informa valores do ICMS no RMD",
+      "tipo": "SN"
+    }
+  }
+}

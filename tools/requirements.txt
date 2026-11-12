@@ -1,1 +1,5 @@
 pdfplumber==0.11.4
+# OCR (tools/ocr)
+pypdfium2
+pillow
+numpy

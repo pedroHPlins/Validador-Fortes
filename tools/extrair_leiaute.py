@@ -34,17 +34,17 @@ TIPOS = ("N", "C", "D", "L", "V", "T", "S")
 
 # ---------------------------------------------------------------- leitura PDF
 
-def ler_pdf(caminho_pdf):
+def ler_pdf(caminho_pdf, xtol=3):
     import pdfplumber
     paginas = []
     with pdfplumber.open(caminho_pdf) as pdf:
         for page in pdf.pages:
             tabelas = []
             for t in page.find_tables():
-                tabelas.append({"bbox": list(t.bbox), "rows": t.extract(),
+                tabelas.append({"bbox": list(t.bbox), "rows": t.extract(x_tolerance=xtol),
                                 "rowbbox": [list(r.bbox) for r in t.rows]})
             linhas = [{"text": l["text"], "x0": l["x0"], "top": l["top"], "bottom": l["bottom"]}
-                      for l in page.extract_text_lines()]
+                      for l in page.extract_text_lines(x_tolerance=xtol)]
             paginas.append({"lines": linhas, "tables": tabelas})
     return paginas
 
@@ -112,6 +112,7 @@ class Montador:
         self.registros = {}
         self.ordem = []
         self.tabelas = {}
+        self.tabelas_ant = {}
         self.avisos = []
         self.atual = None
         self.tabela_atual = None
@@ -163,6 +164,7 @@ class Montador:
                                  "texto": [], "valores": []}
             if num in self.tabelas:
                 self.aviso(f"Tabela {num} repetida (pág. {pn})")
+                self.tabelas_ant.setdefault(num, []).append(self.tabelas[num])
             self.tabelas[num] = self.tabela_atual
             self.atual = None
             return
@@ -240,6 +242,8 @@ class Montador:
             if eh_cabecalho_campos(r):
                 continue
             r = list(r)
+            while len(r) > 5 and not (r[-1] or "").strip() and (r[-2] or "").strip().upper() in TIPOS:
+                r.pop()
             if len(r) < 5:
                 r = r + [None] * (5 - len(r))
             lin = {
@@ -254,6 +258,9 @@ class Montador:
             if lin["tam"].upper() in TIPOS and re.fullmatch(r"\d+|-", lin["tp"]):
                 lin["tam"], lin["tp"] = lin["tp"], lin["tam"].upper()
 
+            m = re.fullmatch(r"(\d+) ([A-Za-zÀ-ú]{1,3})", lin["num"])
+            if m and lin["nome"]:
+                lin["num"], lin["nome"] = m.group(1), m.group(2) + lin["nome"]
             nums = lin["num"].split() if lin["num"] else []
             if nums and all(re.fullmatch(r"\d+", n) for n in nums):
                 if len(nums) == 1 and not lin["tam"] and not lin["tp"] and orfa is not None:
@@ -445,6 +452,10 @@ class Montador:
                     self.aviso(f"{cod}.{c['n']} ({c['nome']}): tamanho '{c['tam']}' inesperado")
             if not r["texto"]:
                 del r["texto"]
+        for num, ant in self.tabelas_ant.items():
+            melhor = max(ant + [self.tabelas[num]], key=lambda t: len(t["valores"]))
+            if len(melhor["valores"]) > len(self.tabelas[num]["valores"]):
+                self.tabelas[num] = melhor
         for t in self.tabelas.values():
             t.pop("_pares", None)
             if not t["valores"]:
@@ -476,6 +487,11 @@ if __name__ == "__main__":
         i = args.index("--cache")
         cache = args[i + 1]
         del args[i:i + 2]
+    xtol = 3
+    if "--xtol" in args:  # PDFs antigos (175, 183) têm espaços estreitos entre palavras: use 1.5
+        i = args.index("--xtol")
+        xtol = float(args[i + 1])
+        del args[i:i + 2]
     if len(args) != 2:
         print(__doc__)
         sys.exit(1)
@@ -484,7 +500,7 @@ if __name__ == "__main__":
         with open(cache, encoding="utf-8") as f:
             paginas = json.load(f)
     else:
-        paginas = ler_pdf(pdf_path)
+        paginas = ler_pdf(pdf_path, xtol)
         if cache:
             with open(cache, "w", encoding="utf-8") as f:
                 json.dump(paginas, f, ensure_ascii=False)

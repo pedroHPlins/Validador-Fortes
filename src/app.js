@@ -1,7 +1,11 @@
 /* Interface do Validador Fortes Fiscal (página local, sem servidor). */
 (function () {
   "use strict";
-  const SPEC = window.SPEC_FORTES;
+  // especificações de cada versão do leiaute, comprimidas (gzip+base64) e abertas sob demanda
+  const LEIAUTES = window.LEIAUTES_FORTES || {};
+  const VERSOES = Object.keys(LEIAUTES).sort((a, b) => b - a);
+  let SPEC = null;
+  const specs = {};
   const V = window.ValidadorFortes;
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -11,7 +15,7 @@
   const ROTULO_NIVEL = { erro: "Erro", aviso: "Aviso", info: "Info" };
   const ROTULO_STATUS = { regra: "validado", contexto: "validado c/ parâmetros", info: "descritivo", pendente: "não automatizado" };
 
-  const estado = { arquivo: null, bytes: null, resultado: null, visao: "grupos", pagina: 0, filtrados: [] };
+  const estado = { arquivo: null, bytes: null, resultado: null, visao: "grupos", pagina: 0, filtrados: [], escolha: null };
 
   // ------------------------------------------------------------ util
   const armazenar = {
@@ -31,13 +35,67 @@
     if (b.dataset.aba === "leiaute" && !$("#listaRegistros").children.length) montaLeiaute();
   }));
 
-  $("#versaoLeiaute").textContent = SPEC.versao;
+  // ------------------------------------------------------------ versões do leiaute
+  async function abreSpec(v) {
+    if (specs[v]) return specs[v];
+    if (typeof DecompressionStream === "undefined") throw new Error("Este navegador não abre as especificações comprimidas. Use Chrome, Edge ou Firefox atualizados.");
+    const bin = Uint8Array.from(atob(LEIAUTES[v]), (c) => c.charCodeAt(0));
+    const txt = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+    return (specs[v] = JSON.parse(txt));
+  }
+
+  async function usaVersao(v) {
+    if (SPEC && SPEC.versao === v) return;
+    SPEC = await abreSpec(v);
+    $("#versaoLeiaute").textContent = SPEC.versao;
+    montaContexto();
+    // a aba Leiaute é remontada para a versão nova
+    $("#listaRegistros").innerHTML = "";
+    $("#cobertura").innerHTML = "";
+    const pend = $("#pendencias");
+    if (pend) pend.parentNode.removeChild(pend);
+    $("#detalheRegistro").innerHTML = `<p class="vazio">Escolha um registro à esquerda para ver os campos, as observações do leiaute e como cada uma é validada.</p>`;
+    if (!$("#aba-leiaute").hidden) montaLeiaute();
+  }
+
+  /** Versão do CAB (campo 2), lida direto dos bytes do arquivo. */
+  function versaoDoArquivo(bytes) {
+    let ini = bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF ? 3 : 0;
+    let fim = bytes.indexOf(10, ini);
+    if (fim < 0 || fim - ini > 400) fim = Math.min(bytes.length, ini + 400);
+    const cab = String.fromCharCode.apply(null, bytes.subarray(ini, fim)).split("|");
+    const v = (cab[1] || "").trim();
+    return cab[0] === "CAB" && /^\d+$/.test(v) ? v : null;
+  }
+
+  /** Escolhe a versão: a do arquivo, se existir; senão a mais próxima abaixo dela; senão a mais antiga. */
+  function escolheVersao(vArq) {
+    const sel = $("#selVersao").value;
+    if (sel !== "auto") return { versao: sel, modo: "manual" };
+    if (!vArq) return { versao: VERSOES[0], modo: "semVersao" };
+    if (LEIAUTES[vArq]) return { versao: vArq, modo: "exata" };
+    const abaixo = VERSOES.find((v) => +v <= +vArq);
+    return { versao: abaixo || VERSOES[VERSOES.length - 1], modo: "proxima" };
+  }
+
+  (function montaSeletor() {
+    const sel = $("#selVersao");
+    sel.innerHTML = `<option value="auto">Automático (versão do arquivo)</option>` + VERSOES.map((v) => `<option value="${v}">${v}${(window.LEIAUTES_INFO || {})[v] ? " (lido por OCR)" : ""}</option>`).join("");
+    const salvo = armazenar.ler("fortes.versao", "auto");
+    sel.value = salvo === "auto" || LEIAUTES[salvo] ? salvo : "auto";
+    sel.addEventListener("change", async () => {
+      armazenar.gravar("fortes.versao", sel.value);
+      if (estado.bytes) validar();
+      else await usaVersao(sel.value === "auto" ? VERSOES[0] : sel.value);
+    });
+  })();
 
   // ------------------------------------------------------------ contexto da empresa
   const UFS = "AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO".split(" ");
   function montaContexto() {
     const salvo = armazenar.ler("fortes.contexto", {});
     const box = $("#camposContexto");
+    box.innerHTML = "";
     for (const [k, d] of Object.entries(SPEC.contexto || {})) {
       let ctrl;
       if (d.tipo === "uf") ctrl = `<select data-ctx="${k}"><option value="">Não informado</option>${UFS.map((u) => `<option>${u}</option>`).join("")}</select>`;
@@ -77,9 +135,17 @@
     leitor.readAsArrayBuffer(f);
   }
 
-  function validar() {
+  async function validar() {
     $("#processando").hidden = false;
     $("#resultado").hidden = true;
+    const vArq = versaoDoArquivo(estado.bytes);
+    estado.escolha = Object.assign({ arquivo: vArq }, escolheVersao(vArq));
+    try {
+      await usaVersao(estado.escolha.versao);
+    } catch (e) {
+      $("#processando").textContent = e.message;
+      return;
+    }
     setTimeout(() => {
       const t0 = performance.now();
       estado.resultado = V.validar(estado.bytes, SPEC, { contexto: lerContexto() });
@@ -95,10 +161,11 @@
   function montaResultado() {
     const r = estado.resultado;
     $("#resultado").hidden = false;
-    const versaoArq = r.cabecalho ? r.cabecalho[1] : "?";
+    const versaoArq = estado.escolha.arquivo || (r.cabecalho ? r.cabecalho[1] : "?");
+    const motivo = { manual: "escolhido manualmente", proxima: "versão mais próxima disponível", semVersao: "CAB sem versão; usada a mais recente" }[estado.escolha.modo];
     const selVersao = versaoArq === SPEC.versao
       ? `<span class="selo ok">leiaute ${esc(versaoArq)}</span>`
-      : `<span class="selo aviso">arquivo no leiaute ${esc(versaoArq)} · validando pelo ${SPEC.versao}</span>`;
+      : `<span class="selo aviso">arquivo no leiaute ${esc(versaoArq)} · validando pelo ${SPEC.versao}${motivo ? " (" + motivo + ")" : ""}</span>`;
     const cab = r.cabecalho || [];
     $("#arquivoInfo").innerHTML = [
       `<b>${esc(estado.arquivo.name)}</b>`,
@@ -306,7 +373,8 @@
     const total = Object.values(e).reduce((a, b) => a + b, 0);
     const pct = (n) => Math.round((n / total) * 100) + "%";
     const nCampos = Object.values(SPEC.registros).reduce((a, r) => a + r.campos.length, 0);
-    $("#cobertura").innerHTML = `
+    const origem = SPEC.origem ? `<div class="c" style="grid-column:1/-1;flex-basis:100%"><span><span class="selo aviso">leiaute ${SPEC.versao}</span> ${esc(SPEC.origem)}. Textos e regras podem conter imprecisões de leitura.</span></div>` : "";
+    $("#cobertura").innerHTML = origem + `
       <div class="c"><b>${fmt(Object.keys(SPEC.registros).length)}</b><span>registros · ${fmt(nCampos)} campos</span></div>
       <div class="c"><b>${fmt(e.regra)}</b><span><span class="selo regra">validado</span> ${pct(e.regra)} das observações</span></div>
       <div class="c"><b>${fmt(e.contexto)}</b><span><span class="selo contexto">c/ parâmetros</span> ${pct(e.contexto)}</span></div>
@@ -339,11 +407,12 @@
     const nivel = (cod) => { let n = 0, p = SPEC.registros[cod].pai; while (p) { n++; p = (SPEC.registros[p] || {}).pai; } return n; };
     ul.innerHTML = ordem.map((cod) => `<li><button data-cod="${cod}" style="padding-left:${8 + nivel(cod) * 12}px"><span class="cod">${cod}</span><span class="nm">${esc(SPEC.registros[cod].nome)}</span></button></li>`).join("");
     $$("button", ul).forEach((b) => b.addEventListener("click", () => mostraRegistro(b.dataset.cod)));
-    $("#buscaReg").addEventListener("input", (ev) => {
-      const q = ev.target.value.trim().toLowerCase();
-      $$("li", ul).forEach((li) => (li.hidden = q && !li.textContent.toLowerCase().includes(q)));
-    });
+    $("#buscaReg").dispatchEvent(new Event("input"));
   }
+  $("#buscaReg").addEventListener("input", (ev) => {
+    const q = ev.target.value.trim().toLowerCase();
+    $$("#listaRegistros li").forEach((li) => (li.hidden = q && !li.textContent.toLowerCase().includes(q)));
+  });
 
   function mostraRegistro(cod) {
     $$("#listaRegistros button").forEach((b) => b.classList.toggle("ativo", b.dataset.cod === cod));
@@ -376,5 +445,6 @@
     $("#detalheRegistro").innerHTML = html;
   }
 
-  montaContexto();
+  const inicial = $("#selVersao").value;
+  usaVersao(inicial === "auto" ? VERSOES[0] : inicial);
 })();

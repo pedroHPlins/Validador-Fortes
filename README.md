@@ -1,11 +1,16 @@
 # Validador Fortes Fiscal (.fs)
 
 Página HTML que valida arquivos de importação `.fs` do Fortes Fiscal conforme o
-**Leiaute de Importação versão 204**. Roda 100% no navegador: o arquivo não sai do computador.
+**Leiaute de Importação**, nas versões **204, 197, 195, 190, 183 e 175**. Roda 100% no navegador:
+o arquivo não sai do computador.
 
 ## Usar
 
-Abra `dist/validador-fortes-204.html` no navegador (Chrome/Edge) e arraste o arquivo `.fs`.
+Abra `dist/validador-fortes.html` no navegador (Chrome/Edge) e arraste o arquivo `.fs`.
+
+- **Conferir pelo leiaute** (topo da página): *Automático* usa a versão informada no CAB do arquivo; se ela
+  não estiver disponível, usa a versão mais próxima abaixo dela (ex.: 196 → 195) e avisa. Também dá para
+  escolher uma versão fixa (fica salva no navegador).
 
 - **Agrupado / Por linha**: ocorrências agrupadas pela regra ou listadas linha a linha.
 - Clique numa ocorrência para ver a linha decomposta campo a campo, com as observações do leiaute.
@@ -67,11 +72,50 @@ src/
 tools/
   extrair_leiaute.py       PDF -> JSON cru
   gerar_regras.py          JSON cru -> regras
-  build.py                 monta dist/validador-fortes-<versão>.html (arquivo único)
+  build.py                 monta dist/validador-fortes.html (arquivo único, todas as versões)
+  portar_versao.py         semântica/correções/regras manuais de uma versão para outra
+  ocr/                     leitura por OCR dos PDFs sem texto (190, 195)
 testes/
   testes.js                testes do motor (node testes/testes.js)
-  resumo.js                valida um .fs e agrupa as ocorrências (node testes/resumo.js arquivo.fs)
+  resumo.js                valida um .fs pela versão do CAB e agrupa as ocorrências (LEIAUTE=204 força a versão)
 ```
+
+## Versões anteriores
+
+Cada versão tem os seus arquivos em `spec/` (`leiaute_<v>.raw.json`, `leiaute_<v>.json`, `correcoes_<v>.json`,
+`semantica_<v>.json`, `regras_manuais_<v>.json`). O `build.py` embute todas as especificações
+`spec/leiaute_<v>.json` na página, comprimidas (gzip + base64, ~200 KB por versão), e a página só abre a
+versão em uso.
+
+Para incluir uma versão nova (ou antiga):
+
+```bash
+python tools/extrair_leiaute.py "<pdf>" spec/leiaute_<v>.raw.json --cache spec/.cache_pdf_<v>.json
+python tools/portar_versao.py 204 <v>        # semântica/correções/regras manuais com os campos da versão <v>
+python tools/gerar_regras.py spec/leiaute_<v>.raw.json spec/leiaute_<v>.json
+python tools/build.py
+```
+
+`portar_versao.py` associa os campos pelo nome e só leva correções cujo defeito também está no PDF novo e
+regras manuais cujo texto também aparece nas observações da versão; o que não puder portar é listado.
+PDFs antigos (175, 183) têm espaços estreitos entre palavras: use `--xtol 1.5` no extrator.
+
+### PDFs sem texto (OCR)
+
+Para PDFs cujo texto é desenho vetorial (190, 195), `tools/ocr/` gera o cache de páginas por OCR
+(Windows.Media.Ocr pt-BR; requer `pypdfium2`, `pillow`, `numpy`):
+
+```bash
+python tools/ocr/ocr_leiaute.py "P:/Base/Leiaute Fortes 195.pdf" 195 <pasta_temporária>
+python tools/extrair_leiaute.py x spec/leiaute_195.raw.json --cache spec/.cache_pdf_195.json
+python tools/ocr/reconciliar.py 195 197 204 183
+```
+
+A grade das tabelas é detectada na imagem e apagada antes do OCR; letras e números isolados (colunas Tipo e
+Nº), que o OCR ignora, são classificados por comparação com a fonte; palavras são corrigidas com o vocabulário
+dos leiautes com texto. `reconciliar.py` mantém a estrutura lida e troca os textos pelos do vizinho quando
+batem (nome do campo, observações, tabelas de códigos), desmembra campos que o OCR juntou e completa
+tamanho/tipo ilegíveis.
 
 ## Regerar (novo PDF / nova versão do leiaute)
 
@@ -124,5 +168,8 @@ e combinações `{e:[…]}`, `{ou:[…]}`, `{nao:…}`.
   A lista completa está na aba **Leiaute e regras**.
 - Somatórios de IBS/CBS por tipo de tributo seguem a leitura do texto do leiaute ("IBS Estadual + IBS Municipal
   - Crédito Presumido") e por isso são emitidos como aviso.
-- Os arquivos de exemplo em `P:\Base` estão no leiaute **195**; validados pelo 204, campos incluídos
-  depois da 195 aparecem como divergências (o validador avisa isso no topo).
+- Os PDFs das versões **190 e 195** não têm texto (as letras são desenhadas como vetores). Foram lidos por
+  OCR e reconciliados com os leiautes vizinhos (ver abaixo). A estrutura (registros, campos, ordem,
+  tamanho e tipo) confere com arquivos reais gerados na 195, mas textos e regras podem ter imprecisões;
+  a página sinaliza essas versões como "lido por OCR".
+- O PDF da 197 traz `Texto Fixo Contendo "196"` no CAB.2; o gerador ajusta para a versão do leiaute.
